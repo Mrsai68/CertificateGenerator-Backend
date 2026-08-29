@@ -1,6 +1,7 @@
 {
   "version": 2,
   "name": "certificate-generator-backend",
+  "framework": null,
   "builds": [
     {
       "src": "server.js",
