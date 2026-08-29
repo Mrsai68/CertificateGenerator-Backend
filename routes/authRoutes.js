@@ -22,13 +22,23 @@ router.post('/register', async (req, res, next) => {
       email,
       password,
       enrollmentNo,
+      EnrollmentNo,
       Name,
+      name,
+      fullName,
       YearOfStudy,
+      yearOfStudy,
       Department,
-      academicYear = '2026-2027',
+      department,
+      academicYear = '2025-2026',
       gender,
       contactNo
     } = req.body;
+
+    const finalEnrollmentNo = enrollmentNo || EnrollmentNo || `ENR-${Date.now().toString().slice(-6)}`;
+    const finalFullName = name || Name || fullName || username;
+    const finalDepartment = department || Department || 'Computer Engineering';
+    const finalYearOfStudy = yearOfStudy || YearOfStudy || 'First Year';
 
     // Check existing username & email
     const existingUser = await User.findOne({ $or: [{ username }, { email }] });
@@ -37,8 +47,8 @@ router.post('/register', async (req, res, next) => {
     }
 
     // Check existing enrollment
-    if (enrollmentNo) {
-      const existingProfile = await StudentProfile.findOne({ enrollmentNo });
+    if (finalEnrollmentNo) {
+      const existingProfile = await StudentProfile.findOne({ enrollmentNo: finalEnrollmentNo });
       if (existingProfile) {
         return res.status(400).json({ message: 'Enrollment number already registered', success: false });
       }
@@ -50,7 +60,7 @@ router.post('/register', async (req, res, next) => {
       email,
       password,
       role: 'ROLE_STUDENT',
-      department: Department || 'Computer Engineering',
+      department: finalDepartment,
       isActive: true
     });
     const savedUser = await user.save();
@@ -58,10 +68,10 @@ router.post('/register', async (req, res, next) => {
     // Create Student Profile
     const profile = new StudentProfile({
       user: savedUser._id,
-      enrollmentNo: enrollmentNo || `ENR-${Date.now()}`,
-      fullName: Name || username,
-      department: Department || 'Computer Engineering',
-      yearOfStudy: YearOfStudy || 'First Year',
+      enrollmentNo: finalEnrollmentNo,
+      fullName: finalFullName,
+      department: finalDepartment,
+      yearOfStudy: finalYearOfStudy,
       academicYear,
       gender: gender || '',
       contactNo: contactNo || ''
@@ -84,7 +94,8 @@ router.post('/register', async (req, res, next) => {
 // @desc    Register HOD or Admin user
 router.post('/userreg', async (req, res, next) => {
   try {
-    const { username, password, Department } = req.body;
+    const { username, password, Department, department } = req.body;
+    const finalDept = department || Department || 'Computer Engineering';
 
     const existingUser = await User.findOne({ username });
     if (existingUser) {
@@ -96,7 +107,7 @@ router.post('/userreg', async (req, res, next) => {
       email: `${username.toLowerCase()}@gpmiraj.ac.in`,
       password,
       role: 'ROLE_HOD',
-      department: Department || 'Computer Engineering',
+      department: finalDept,
       isActive: true
     });
     await user.save();

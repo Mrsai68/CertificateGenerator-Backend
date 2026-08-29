@@ -1,13 +1,13 @@
 import express from 'express';
 import User from '../models/User.js';
 import StudentProfile from '../models/StudentProfile.js';
-import { protect, isStudent } from '../middleware/authMiddleware.js';
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 // @route   GET /api/v1/student/profile
-// @desc    Get current student profile details
-router.get('/profile', protect, isStudent, async (req, res, next) => {
+// @desc    Get current logged in user/student profile details
+router.get('/profile', protect, async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id);
     if (!user) {
@@ -15,8 +15,8 @@ router.get('/profile', protect, isStudent, async (req, res, next) => {
     }
 
     let profile = await StudentProfile.findOne({ user: req.user._id });
-    if (!profile) {
-      // Auto-create default profile if missing
+    if (!profile && (user.role === 'ROLE_STUDENT' || !user.role)) {
+      // Auto-create default profile for student if missing
       profile = new StudentProfile({
         user: req.user._id,
         enrollmentNo: `ENR-${Date.now().toString().slice(-6)}`,
@@ -32,13 +32,14 @@ router.get('/profile', protect, isStudent, async (req, res, next) => {
       userId: user._id,
       username: user.username,
       email: user.email,
-      fullName: profile.fullName || user.username,
-      enrollmentNo: profile.enrollmentNo || 'N/A',
-      department: profile.department || user.department || 'Computer Engineering',
-      yearOfStudy: profile.yearOfStudy || 'First Year',
-      academicYear: profile.academicYear || '2025-2026',
-      gender: profile.gender || '',
-      contactNo: profile.contactNo || '',
+      role: user.role,
+      fullName: profile?.fullName || user.username,
+      enrollmentNo: profile?.enrollmentNo || 'N/A',
+      department: profile?.department || user.department || 'Computer Engineering',
+      yearOfStudy: profile?.yearOfStudy || 'N/A',
+      academicYear: profile?.academicYear || '2025-2026',
+      gender: profile?.gender || '',
+      contactNo: profile?.contactNo || '',
       success: true
     });
   } catch (err) {
@@ -48,7 +49,7 @@ router.get('/profile', protect, isStudent, async (req, res, next) => {
 
 // @route   PUT /api/v1/student/profile
 // @desc    Update current student profile details
-router.put('/profile', protect, isStudent, async (req, res, next) => {
+router.put('/profile', protect, async (req, res, next) => {
   try {
     const { fullName, enrollmentNo, department, yearOfStudy, academicYear, gender, contactNo } = req.body;
 
