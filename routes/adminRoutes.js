@@ -7,10 +7,12 @@ import IssuedCertificate from '../models/IssuedCertificate.js';
 import { protect, isAdminOrHod } from '../middleware/authMiddleware.js';
 import { generateCertificatePdf } from '../services/pdfService.js';
 import {
+  sendWelcomeEmail,
   sendCertificateApprovalEmail,
   sendCertificateRejectionEmail,
   sendAccountDeactivatedEmail,
-  sendAccountReactivatedEmail
+  sendAccountReactivatedEmail,
+  sendAccountDeletedEmail
 } from '../services/emailService.js';
 
 const router = express.Router();
@@ -124,6 +126,7 @@ router.post('/users', protect, isAdminOrHod, async (req, res, next) => {
     });
     const savedUser = await user.save();
 
+    let recipientName = username;
     if (role === 'ROLE_STUDENT') {
       const profile = new StudentProfile({
         user: savedUser._id,
@@ -134,6 +137,14 @@ router.post('/users', protect, isAdminOrHod, async (req, res, next) => {
         academicYear: '2025-2026'
       });
       await profile.save();
+      recipientName = profile.fullName;
+    }
+
+    // Send Welcome Email
+    try {
+      await sendWelcomeEmail(savedUser.email, recipientName, savedUser.username);
+    } catch (emailErr) {
+      console.error('Welcome email dispatch warning:', emailErr.message);
     }
 
     return res.json({ message: 'User created successfully', success: true });
@@ -180,10 +191,17 @@ router.delete('/users/:userId', protect, isAdminOrHod, async (req, res, next) =>
       return res.status(404).json({ message: 'User not found', success: false });
     }
 
+    // Send Account Deleted Notification Email
+    try {
+      await sendAccountDeletedEmail(user.email, user.username);
+    } catch (emailErr) {
+      console.error('Account deletion email warning:', emailErr.message);
+    }
+
     await StudentProfile.deleteOne({ user: user._id });
     await User.deleteOne({ _id: user._id });
 
-    return res.json({ message: 'User deleted successfully', success: true });
+    return res.json({ message: 'User deleted successfully and notification email sent.', success: true });
   } catch (err) {
     next(err);
   }

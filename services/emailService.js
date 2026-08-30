@@ -1,11 +1,17 @@
 import nodemailer from 'nodemailer';
 import { InstitutionConstants } from '../config/institutionConfig.js';
 
-const createTransporter = () => {
+const getSmtpCredentials = () => {
   const host = process.env.SMTP_HOST || 'smtp.gmail.com';
   const port = parseInt(process.env.SMTP_PORT || '587');
   const user = process.env.SMTP_USER || 'sairaj0608@gmail.com';
   const pass = process.env.SMTP_PASS || 'clli szld hdie pnan';
+
+  return { host, port, user, pass };
+};
+
+const createTransporter = () => {
+  const { host, port, user, pass } = getSmtpCredentials();
 
   if (!user || !pass) {
     return null;
@@ -16,13 +22,14 @@ const createTransporter = () => {
     port,
     secure: port === 465,
     auth: { user, pass },
-    connectionTimeout: 3000,
-    socketTimeout: 3000
+    connectionTimeout: 5000,
+    socketTimeout: 5000
   });
 };
 
 export const sendWelcomeEmail = async (toEmail, studentName, username) => {
   try {
+    const { user } = getSmtpCredentials();
     const transporter = createTransporter();
     if (!transporter) {
       console.log(`>>> SMTP transporter not configured. Skipping welcome email to ${toEmail}`);
@@ -39,12 +46,12 @@ export const sendWelcomeEmail = async (toEmail, studentName, username) => {
     </div>`;
 
     await transporter.sendMail({
-      from: process.env.SMTP_USER,
+      from: `"${InstitutionConstants.COLLEGE_SHORT_NAME} Portal" <${user}>`,
       to: toEmail,
       subject: `Welcome to ${InstitutionConstants.PORTAL_NAME} | ${InstitutionConstants.COLLEGE_SHORT_NAME}`,
       html
     });
-    console.log(`Welcome msg successfully sent to ${toEmail}`);
+    console.log(`>>> Welcome msg successfully sent to ${toEmail}`);
   } catch (error) {
     console.error(`Failed to send Welcome Email: ${error.message}`);
   }
@@ -52,6 +59,7 @@ export const sendWelcomeEmail = async (toEmail, studentName, username) => {
 
 export const sendPasswordResetOtpEmail = async (toEmail, otpCode) => {
   try {
+    const { user } = getSmtpCredentials();
     const transporter = createTransporter();
     if (!transporter) {
       console.log(`>>> SMTP transporter not configured. Skipping OTP email to ${toEmail} (OTP Code: ${otpCode})`);
@@ -67,7 +75,7 @@ export const sendPasswordResetOtpEmail = async (toEmail, otpCode) => {
     </div>`;
 
     await transporter.sendMail({
-      from: process.env.SMTP_USER,
+      from: `"${InstitutionConstants.COLLEGE_SHORT_NAME} Portal" <${user}>`,
       to: toEmail,
       subject: `Reset Password OTP Code - ${InstitutionConstants.PORTAL_NAME}`,
       html
@@ -80,6 +88,7 @@ export const sendPasswordResetOtpEmail = async (toEmail, otpCode) => {
 
 export const sendCertificateApprovalEmail = async (toEmail, studentName, purpose, certNo, pdfBuffer) => {
   try {
+    const { user } = getSmtpCredentials();
     const transporter = createTransporter();
     if (!transporter) {
       console.log(`>>> SMTP transporter not configured. Skipping approval email to ${toEmail}`);
@@ -96,7 +105,7 @@ export const sendCertificateApprovalEmail = async (toEmail, studentName, purpose
     </div>`;
 
     await transporter.sendMail({
-      from: process.env.SMTP_USER,
+      from: `"${InstitutionConstants.COLLEGE_SHORT_NAME} Portal" <${user}>`,
       to: toEmail,
       subject: `APPROVED: Bonafide Certificate (${certNo})`,
       html,
@@ -115,6 +124,7 @@ export const sendCertificateApprovalEmail = async (toEmail, studentName, purpose
 
 export const sendCertificateRejectionEmail = async (toEmail, studentName, purpose, remarks) => {
   try {
+    const { user } = getSmtpCredentials();
     const transporter = createTransporter();
     if (!transporter) {
       console.log(`>>> SMTP transporter not configured. Skipping rejection email to ${toEmail}`);
@@ -131,7 +141,7 @@ export const sendCertificateRejectionEmail = async (toEmail, studentName, purpos
     </div>`;
 
     await transporter.sendMail({
-      from: process.env.SMTP_USER,
+      from: `"${InstitutionConstants.COLLEGE_SHORT_NAME} Portal" <${user}>`,
       to: toEmail,
       subject: `UPDATE: Bonafide Certificate Application Status`,
       html
@@ -144,6 +154,7 @@ export const sendCertificateRejectionEmail = async (toEmail, studentName, purpos
 
 export const sendAccountDeactivatedEmail = async (toEmail, username, reason) => {
   try {
+    const { user } = getSmtpCredentials();
     const transporter = createTransporter();
     if (!transporter) {
       console.log(`>>> SMTP transporter not configured. Skipping deactivation email to ${toEmail}`);
@@ -165,7 +176,7 @@ export const sendAccountDeactivatedEmail = async (toEmail, username, reason) => 
     </div>`;
 
     await transporter.sendMail({
-      from: process.env.SMTP_USER,
+      from: `"${InstitutionConstants.COLLEGE_SHORT_NAME} Portal" <${user}>`,
       to: toEmail,
       subject: `NOTICE: Account Deactivated - ${InstitutionConstants.PORTAL_NAME}`,
       html
@@ -178,6 +189,7 @@ export const sendAccountDeactivatedEmail = async (toEmail, username, reason) => 
 
 export const sendAccountReactivatedEmail = async (toEmail, username) => {
   try {
+    const { user } = getSmtpCredentials();
     const transporter = createTransporter();
     if (!transporter) {
       console.log(`>>> SMTP transporter not configured. Skipping reactivation email to ${toEmail}`);
@@ -193,7 +205,7 @@ export const sendAccountReactivatedEmail = async (toEmail, username) => {
     </div>`;
 
     await transporter.sendMail({
-      from: process.env.SMTP_USER,
+      from: `"${InstitutionConstants.COLLEGE_SHORT_NAME} Portal" <${user}>`,
       to: toEmail,
       subject: `NOTICE: Account Restored & Reactivated - ${InstitutionConstants.PORTAL_NAME}`,
       html
@@ -201,5 +213,34 @@ export const sendAccountReactivatedEmail = async (toEmail, username) => {
     console.log(`>>> Account reactivation email sent to ${toEmail}`);
   } catch (error) {
     console.error(`Failed to send reactivation email: ${error.message}`);
+  }
+};
+
+export const sendAccountDeletedEmail = async (toEmail, username) => {
+  try {
+    const { user } = getSmtpCredentials();
+    const transporter = createTransporter();
+    if (!transporter) {
+      console.log(`>>> SMTP transporter not configured. Skipping deletion email to ${toEmail}`);
+      return;
+    }
+
+    const html = `<div style='font-family: Arial, sans-serif; padding: 20px; color: #1e293b;'>
+      <h2 style='color: #dc2626;'>Account Deleted Notice</h2>
+      <p>Dear <strong>${username}</strong>,</p>
+      <p>Your portal account (<strong>${username}</strong>) and associated student profile have been <strong>Permanently Deleted</strong> by Institutional Administration.</p>
+      <p>If you believe this action was performed in error or need a new account created, please contact the Head of Department (HOD) or Administration office.</p>
+      <br><p>Best Regards,<br>Institutional Administration | ${InstitutionConstants.COLLEGE_NAME}</p>
+    </div>`;
+
+    await transporter.sendMail({
+      from: `"${InstitutionConstants.COLLEGE_SHORT_NAME} Portal" <${user}>`,
+      to: toEmail,
+      subject: `NOTICE: Account Deleted - ${InstitutionConstants.PORTAL_NAME}`,
+      html
+    });
+    console.log(`>>> Account deletion email sent to ${toEmail}`);
+  } catch (error) {
+    console.error(`Failed to send deletion email: ${error.message}`);
   }
 };

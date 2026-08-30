@@ -78,8 +78,12 @@ router.post('/register', async (req, res, next) => {
     });
     await profile.save();
 
-    // Send Welcome Email
-    sendWelcomeEmail(savedUser.email, profile.fullName, savedUser.username);
+    // Send Welcome Email (await for Vercel Serverless function completion)
+    try {
+      await sendWelcomeEmail(savedUser.email, profile.fullName, savedUser.username);
+    } catch (emailErr) {
+      console.error('Welcome email dispatch warning:', emailErr.message);
+    }
 
     return res.status(201).json({
       message: 'Student registered successfully!',
