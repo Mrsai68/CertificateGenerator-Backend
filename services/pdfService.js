@@ -91,24 +91,46 @@ export const generateCertificatePdf = async (issuedCert, studentProfile, certifi
 
       // 5. Body Text
       curY += 55;
-      const studentName = (studentProfile?.fullName || certificateRequest?.user?.username || 'STUDENT').toUpperCase().toBold;
+      const studentName = (studentProfile?.fullName || certificateRequest?.user?.username || 'STUDENT').toUpperCase();
       const enrollmentNo = studentProfile?.enrollmentNo || 'N/A';
       const yearOfStudy = studentProfile?.yearOfStudy || 'Diploma Study';
       const dept = studentProfile?.department || 'Engineering';
       const academicYear = studentProfile?.academicYear || '2025-2026';
       const purposeText = (certificateRequest?.purpose || 'OFFICIAL PURPOSE').toUpperCase();
 
-      doc.font('Helvetica')
-        .fontSize(11.5)
+      doc.fontSize(11.5)
         .fillColor('#0f172a')
         .lineGap(9);
 
-      const para1 = `This is to certify that Mr. / Ms. ${studentName}, bearing Enrollment No. ${enrollmentNo}, is a genuine and bonafide student of this institution studying in ${yearOfStudy} (${dept}) during the Academic Year ${academicYear}.`;
-      doc.text(para1, 55, curY, { width: pageWidth - 110, align: 'justify' });
+      // Paragraph 1 with inline bold dynamic strings
+      doc.font('Helvetica')
+        .text('This is to certify that Mr. / Ms. ', 55, curY, { continued: true, width: pageWidth - 110, align: 'justify' })
+        .font('Helvetica-Bold')
+        .text(studentName, { continued: true })
+        .font('Helvetica')
+        .text(', bearing Enrollment No. ', { continued: true })
+        .font('Helvetica-Bold')
+        .text(enrollmentNo, { continued: true })
+        .font('Helvetica')
+        .text(', is a genuine and bonafide student of this institution studying in ', { continued: true })
+        .font('Helvetica-Bold')
+        .text(`${yearOfStudy} (${dept})`, { continued: true })
+        .font('Helvetica')
+        .text(' during the Academic Year ', { continued: true })
+        .font('Helvetica-Bold')
+        .text(academicYear, { continued: true })
+        .font('Helvetica')
+        .text('.');
 
       curY = doc.y + 16;
-      const para2 = `This certificate is issued upon the student's request for the purpose of: ${purposeText}. To the best of our knowledge, his/her character and conduct during the stay in the college have been GOOD.`;
-      doc.text(para2, 55, curY, { width: pageWidth - 110, align: 'justify' });
+
+      // Paragraph 2 with inline bold dynamic strings
+      doc.font('Helvetica')
+        .text("This certificate is issued upon the student's request for the purpose of: ", 55, curY, { continued: true, width: pageWidth - 110, align: 'justify' })
+        .font('Helvetica-Bold')
+        .text(purposeText, { continued: true })
+        .font('Helvetica')
+        .text('. To the best of our knowledge, his/her character and conduct during the stay in the college have been GOOD.');
 
       // 6. Footer Section (Fixed Y near bottom: Y = 640)
       const footerY = 640;
