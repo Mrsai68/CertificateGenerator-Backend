@@ -31,10 +31,7 @@ export const sendWelcomeEmail = async (toEmail, studentName, username) => {
   try {
     const { user } = getSmtpCredentials();
     const transporter = createTransporter();
-    if (!transporter) {
-      console.log(`>>> SMTP transporter not configured. Skipping welcome email to ${toEmail}`);
-      return;
-    }
+    if (!transporter) return;
 
     const html = `<div style='font-family: Arial, sans-serif; padding: 20px; color: #1e293b;'>
       <h2 style='color: #2563eb;'>Welcome to ${InstitutionConstants.PORTAL_NAME}</h2>
@@ -51,7 +48,6 @@ export const sendWelcomeEmail = async (toEmail, studentName, username) => {
       subject: `Welcome to ${InstitutionConstants.PORTAL_NAME} | ${InstitutionConstants.COLLEGE_SHORT_NAME}`,
       html
     });
-    console.log(`>>> Welcome msg successfully sent to ${toEmail}`);
   } catch (error) {
     console.error(`Failed to send Welcome Email: ${error.message}`);
   }
@@ -61,10 +57,7 @@ export const sendPasswordResetOtpEmail = async (toEmail, otpCode) => {
   try {
     const { user } = getSmtpCredentials();
     const transporter = createTransporter();
-    if (!transporter) {
-      console.log(`>>> SMTP transporter not configured. Skipping OTP email to ${toEmail} (OTP Code: ${otpCode})`);
-      return;
-    }
+    if (!transporter) return;
 
     const html = `<div style='font-family: Arial, sans-serif; padding: 20px; color: #1e293b;'>
       <h2 style='color: #2563eb;'>Password Reset Verification Code</h2>
@@ -80,7 +73,6 @@ export const sendPasswordResetOtpEmail = async (toEmail, otpCode) => {
       subject: `Reset Password OTP Code - ${InstitutionConstants.PORTAL_NAME}`,
       html
     });
-    console.log(`>>> Password reset OTP email sent to ${toEmail}`);
   } catch (error) {
     console.error(`Failed to send OTP Email: ${error.message}`);
   }
@@ -90,10 +82,7 @@ export const sendCertificateApprovalEmail = async (toEmail, studentName, purpose
   try {
     const { user } = getSmtpCredentials();
     const transporter = createTransporter();
-    if (!transporter) {
-      console.log(`>>> SMTP transporter not configured. Skipping approval email to ${toEmail}`);
-      return;
-    }
+    if (!transporter) return;
 
     const html = `<div style='font-family: Arial, sans-serif; padding: 20px; color: #1e293b;'>
       <h2 style='color: #16a34a;'>Bonafide Certificate Approved!</h2>
@@ -116,7 +105,6 @@ export const sendCertificateApprovalEmail = async (toEmail, studentName, purpose
         }
       ]
     });
-    console.log(`>>> Certificate approval email sent to ${toEmail}`);
   } catch (error) {
     console.error(`Failed to send approval email: ${error.message}`);
   }
@@ -126,10 +114,7 @@ export const sendCertificateRejectionEmail = async (toEmail, studentName, purpos
   try {
     const { user } = getSmtpCredentials();
     const transporter = createTransporter();
-    if (!transporter) {
-      console.log(`>>> SMTP transporter not configured. Skipping rejection email to ${toEmail}`);
-      return;
-    }
+    if (!transporter) return;
 
     const html = `<div style='font-family: Arial, sans-serif; padding: 20px; color: #1e293b;'>
       <h2 style='color: #dc2626;'>Certificate Application Status Update</h2>
@@ -146,7 +131,6 @@ export const sendCertificateRejectionEmail = async (toEmail, studentName, purpos
       subject: `UPDATE: Bonafide Certificate Application Status`,
       html
     });
-    console.log(`>>> Rejection email sent to ${toEmail}`);
   } catch (error) {
     console.error(`Failed to send rejection email: ${error.message}`);
   }
@@ -156,10 +140,7 @@ export const sendAccountDeactivatedEmail = async (toEmail, username, reason) => 
   try {
     const { user } = getSmtpCredentials();
     const transporter = createTransporter();
-    if (!transporter) {
-      console.log(`>>> SMTP transporter not configured. Skipping deactivation email to ${toEmail}`);
-      return;
-    }
+    if (!transporter) return;
 
     const reasonHtml = reason && reason.trim() !== ''
       ? `<p style='background: #fef2f2; border-left: 4px solid #dc2626; padding: 10px; margin: 10px 0;'><strong>Reason for Deactivation:</strong> ${reason}</p>`
@@ -181,7 +162,6 @@ export const sendAccountDeactivatedEmail = async (toEmail, username, reason) => 
       subject: `NOTICE: Account Deactivated - ${InstitutionConstants.PORTAL_NAME}`,
       html
     });
-    console.log(`>>> Account deactivation email sent to ${toEmail}`);
   } catch (error) {
     console.error(`Failed to send deactivation email: ${error.message}`);
   }
@@ -191,10 +171,7 @@ export const sendAccountReactivatedEmail = async (toEmail, username) => {
   try {
     const { user } = getSmtpCredentials();
     const transporter = createTransporter();
-    if (!transporter) {
-      console.log(`>>> SMTP transporter not configured. Skipping reactivation email to ${toEmail}`);
-      return;
-    }
+    if (!transporter) return;
 
     const html = `<div style='font-family: Arial, sans-serif; padding: 20px; color: #1e293b;'>
       <h2 style='color: #16a34a;'>Account Reactivated!</h2>
@@ -210,7 +187,6 @@ export const sendAccountReactivatedEmail = async (toEmail, username) => {
       subject: `NOTICE: Account Restored & Reactivated - ${InstitutionConstants.PORTAL_NAME}`,
       html
     });
-    console.log(`>>> Account reactivation email sent to ${toEmail}`);
   } catch (error) {
     console.error(`Failed to send reactivation email: ${error.message}`);
   }
@@ -220,10 +196,7 @@ export const sendAccountDeletedEmail = async (toEmail, username) => {
   try {
     const { user } = getSmtpCredentials();
     const transporter = createTransporter();
-    if (!transporter) {
-      console.log(`>>> SMTP transporter not configured. Skipping deletion email to ${toEmail}`);
-      return;
-    }
+    if (!transporter) return;
 
     const html = `<div style='font-family: Arial, sans-serif; padding: 20px; color: #1e293b;'>
       <h2 style='color: #dc2626;'>Account Deleted Notice</h2>
@@ -239,7 +212,6 @@ export const sendAccountDeletedEmail = async (toEmail, username) => {
       subject: `NOTICE: Account Deleted - ${InstitutionConstants.PORTAL_NAME}`,
       html
     });
-    console.log(`>>> Account deletion email sent to ${toEmail}`);
   } catch (error) {
     console.error(`Failed to send deletion email: ${error.message}`);
   }

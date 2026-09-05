@@ -198,10 +198,9 @@ router.delete('/users/:userId', protect, isAdminOrHod, async (req, res, next) =>
     // Send Account Deleted Notification Email (await for Vercel serverless execution)
     if (targetEmail) {
       try {
-        console.log(`[Admin User Delete] Triggering account deletion email to ${targetEmail} (${studentName})`);
         await sendAccountDeletedEmail(targetEmail, studentName);
       } catch (emailErr) {
-        console.error('[Admin User Delete] Account deletion email error:', emailErr.message);
+        console.error('Account deletion email error:', emailErr.message);
       }
     }
 
