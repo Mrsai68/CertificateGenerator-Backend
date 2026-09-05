@@ -91,7 +91,7 @@ export const generateCertificatePdf = async (issuedCert, studentProfile, certifi
 
       // 5. Body Text
       curY += 55;
-      const studentName = (studentProfile?.fullName || certificateRequest?.user?.username || 'STUDENT').toUpperCase();
+      const studentName = (studentProfile?.fullName || certificateRequest?.user?.username || 'STUDENT').toUpperCase().toBold;
       const enrollmentNo = studentProfile?.enrollmentNo || 'N/A';
       const yearOfStudy = studentProfile?.yearOfStudy || 'Diploma Study';
       const dept = studentProfile?.department || 'Engineering';
@@ -153,7 +153,7 @@ export const generateCertificatePdf = async (issuedCert, studentProfile, certifi
         .fillColor('#1e293b')
         .lineGap(2);
 
-      const sigBodyText = `Digitally Signed by: Principal / Head of Institution\nIssuer: Government Polytechnic Miraj CA\nDate: ${istDateStr}\nReason: Official Bonafide Document Approval\nLocation: Miraj, District Sangli, Maharashtra`;
+      const sigBodyText = `Digitally Signed by: Principal / Head of Institution\nIssuer: Government Polytechnic Miraj\nDate: ${istDateStr}\nReason: Official Bonafide Document Approval\nLocation: Miraj, District Sangli, Maharashtra`;
 
       doc.text(sigBodyText, sigX + 8, footerY + 20, { width: sigWidth - 16 });
 
