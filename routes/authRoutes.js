@@ -162,7 +162,8 @@ router.post('/login', async (req, res, next) => {
       role: user.role,
       department: user.department,
       enrollment,
-      fullName
+      fullName,
+      expiresIn: process.env.JWT_EXPIRE || '24h'
     });
   } catch (err) {
     next(err);
