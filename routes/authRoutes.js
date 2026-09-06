@@ -133,7 +133,7 @@ router.post('/login', async (req, res, next) => {
 
     const user = await User.findOne({ username });
     if (!user) {
-      return res.status(401).json({ message: 'Invalid username or password', success: false });
+      return res.status(404).json({ message: 'Username does not exist. Please register first to login.', success: false });
     }
 
     if (!user.isActive) {
@@ -142,7 +142,7 @@ router.post('/login', async (req, res, next) => {
 
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid username or password', success: false });
+      return res.status(401).json({ message: 'Incorrect password. Please try again.', success: false });
     }
 
     const token = generateToken(user._id);
