@@ -5,7 +5,6 @@ import { InstitutionConstants } from '../config/institutionConfig.js';
 export const generateCertificatePdf = async (issuedCert, studentProfile, certificateRequest) => {
   return new Promise(async (resolve, reject) => {
     try {
-      // Set margin: 0 to prevent PDFKit from automatically inserting page breaks
       const doc = new PDFDocument({
         size: 'A4',
         margin: 0,
@@ -15,18 +14,17 @@ export const generateCertificatePdf = async (issuedCert, studentProfile, certifi
       const buffers = [];
       doc.on('data', buffers.push.bind(buffers));
       doc.on('end', () => {
-        const pdfData = Buffer.concat(buffers);
-        resolve(pdfData);
+        resolve(Buffer.concat(buffers));
       });
 
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
-      const token = issuedCert?.verificationToken || 'VALID';
-      const verificationUrl = `${frontendUrl}/verify/${token}`;
+      const certNo = issuedCert?.certificateNumber || 'GPM/CERT/OFFICIAL';
+      const verificationUrl = `${frontendUrl}/verify/${certNo}`;
 
-      const pageWidth = doc.page.width; // 595.28 pt
-      const pageHeight = doc.page.height; // 841.89 pt
+      const pageWidth = doc.page.width;
+      const pageHeight = doc.page.height;
 
-      // 1. Draw Outer & Inner Double Navy Border
+      // Outer & Inner Borders
       const outerMargin = 22;
       doc.lineWidth(2.5)
         .rect(outerMargin, outerMargin, pageWidth - 2 * outerMargin, pageHeight - 2 * outerMargin)
@@ -37,7 +35,7 @@ export const generateCertificatePdf = async (issuedCert, studentProfile, certifi
         .rect(innerMargin, innerMargin, pageWidth - 2 * innerMargin, pageHeight - 2 * innerMargin)
         .stroke('#1e3a8a');
 
-      // 2. Letterhead Header (Absolute Positioning)
+      // Header
       let curY = 55;
       doc.font('Helvetica-Bold')
         .fontSize(18)
@@ -51,21 +49,18 @@ export const generateCertificatePdf = async (issuedCert, studentProfile, certifi
         .text(InstitutionConstants.COLLEGE_ADDRESS, 40, curY, { width: pageWidth - 80, align: 'center' });
 
       curY += 22;
-      // Decorative Line Separator
       doc.lineWidth(1.5)
         .moveTo(45, curY)
         .lineTo(pageWidth - 45, curY)
         .stroke('#1e3a8a');
 
-      // 3. Meta (Ref No & Date)
+      // Ref & Date
       curY += 18;
-      const certNo = issuedCert?.certificateNumber || 'GPM/CERT/OFFICIAL';
       const issueDate = certificateRequest?.approvedDate
         ? new Date(certificateRequest.approvedDate)
         : (issuedCert?.issueDate ? new Date(issuedCert.issueDate) : new Date());
 
-      const options = { day: '2-digit', month: 'long', year: 'numeric' };
-      const formattedDate = issueDate.toLocaleDateString('en-GB', options);
+      const formattedDate = issueDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
 
       doc.font('Helvetica-Bold')
         .fontSize(11)
@@ -74,14 +69,13 @@ export const generateCertificatePdf = async (issuedCert, studentProfile, certifi
 
       doc.text(`Date: ${formattedDate}`, pageWidth - 295, curY, { width: 250, align: 'right' });
 
-      // 4. Certificate Title
+      // Title
       curY += 45;
       doc.font('Helvetica-Bold')
         .fontSize(18)
         .fillColor('#b91c1c')
         .text('BONAFIDE CERTIFICATE', 40, curY, { width: pageWidth - 80, align: 'center' });
 
-      // Title Underline
       const titleWidth = 220;
       const titleX = (pageWidth - titleWidth) / 2;
       doc.lineWidth(1.5)
@@ -89,7 +83,7 @@ export const generateCertificatePdf = async (issuedCert, studentProfile, certifi
         .lineTo(titleX + titleWidth, curY + 24)
         .stroke('#b91c1c');
 
-      // 5. Body Text
+      // Content
       curY += 55;
       const studentName = (studentProfile?.fullName || certificateRequest?.user?.username || 'STUDENT').toUpperCase();
       const enrollmentNo = studentProfile?.enrollmentNo || 'N/A';
@@ -102,7 +96,6 @@ export const generateCertificatePdf = async (issuedCert, studentProfile, certifi
         .fillColor('#0f172a')
         .lineGap(9);
 
-      // Paragraph 1 with inline bold dynamic strings
       doc.font('Helvetica')
         .text('This is to certify that Mr. / Ms. ', 55, curY, { continued: true, width: pageWidth - 110, align: 'justify' })
         .font('Helvetica-Bold')
@@ -124,7 +117,6 @@ export const generateCertificatePdf = async (issuedCert, studentProfile, certifi
 
       curY = doc.y + 16;
 
-      // Paragraph 2 with inline bold dynamic strings
       doc.font('Helvetica')
         .text("This certificate is issued upon the student's request for the purpose of: ", 55, curY, { continued: true, width: pageWidth - 110, align: 'justify' })
         .font('Helvetica-Bold')
@@ -132,42 +124,35 @@ export const generateCertificatePdf = async (issuedCert, studentProfile, certifi
         .font('Helvetica')
         .text('. To the best of our knowledge, his/her character and conduct during the stay in the college have been GOOD.');
 
-      // 6. Footer Section (Fixed Y near bottom: Y = 640)
+      // Footer
       const footerY = 640;
 
-      // Generate QR Code Buffer
       const qrDataUrl = await QRCode.toDataURL(verificationUrl, { width: 90, margin: 1 });
       const qrBuffer = Buffer.from(qrDataUrl.split(',')[1], 'base64');
 
-      // Column 1: QR Code
       doc.image(qrBuffer, 55, footerY, { fit: [85, 85] });
       doc.font('Helvetica-Oblique')
         .fontSize(8)
         .fillColor('#64748b')
         .text('Scan to Verify Authenticity', 45, footerY + 90, { width: 105, align: 'center' });
 
-      // Column 2: Official Seal Box
       doc.font('Helvetica-Oblique')
         .fontSize(9)
         .fillColor('#475569')
         .text('[ OFFICIAL EMBLEM SEAL ]\n\nGovernment Polytechnic, Miraj', 175, footerY + 25, { width: 150, align: 'center' });
 
-      // Column 3: Indian Govt Standard Digital Signature Box
       const sigX = pageWidth - 240;
       const sigWidth = 185;
       const sigHeight = 100;
 
-      // Background Tint & Green Border
       doc.rect(sigX, footerY, sigWidth, sigHeight)
         .fillAndStroke('#ecfdf5', '#059669');
 
-      // Signature Header Badge
       doc.font('Helvetica-Bold')
         .fontSize(9.5)
         .fillColor('#059669')
         .text('Signature Valid', sigX + 8, footerY + 6);
 
-      // IST Date Formatting
       const istDateStr = issueDate.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
 
       doc.font('Helvetica')
@@ -175,16 +160,14 @@ export const generateCertificatePdf = async (issuedCert, studentProfile, certifi
         .fillColor('#1e293b')
         .lineGap(2);
 
-      const sigBodyText = `Digitally Signed by: Principal / Head of Institution\nIssuer: Government Polytechnic Miraj\nDate: ${istDateStr}\nReason: Official Bonafide Document Approval\nLocation: Miraj, District Sangli, Maharashtra`;
+      const sigBodyText = `Digitally Signed by: Principal / Head of Institution\nIssuer: Government Polytechnic Miraj\nDate: ${istDateStr}\nReason: Official Document Approval\nLocation: Miraj, District Sangli, Maharashtra`;
 
       doc.text(sigBodyText, sigX + 8, footerY + 20, { width: sigWidth - 16 });
 
-      // 7. Verification Footer Disclaimer (Fixed Y = 785)
-      const disclaimerY = 785;
       doc.font('Helvetica-Oblique')
         .fontSize(7.5)
         .fillColor('#64748b')
-        .text(`Note: This is an officially system-generated document digitally signed under Indian e-Sign / PKI Governance framework. Authenticity can be verified online at ${verificationUrl}`, 40, disclaimerY, { width: pageWidth - 80, align: 'center' });
+        .text(`Note: This is an official system-generated document. Authenticity can be verified online at ${verificationUrl}`, 40, 785, { width: pageWidth - 80, align: 'center' });
 
       doc.end();
     } catch (err) {

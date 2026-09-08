@@ -8,6 +8,7 @@ import { protect, isAdminOrHod } from '../middleware/authMiddleware.js';
 import { generateCertificatePdf } from '../services/pdfService.js';
 import { createNotification } from '../services/notificationService.js';
 import { logAuditEvent } from '../services/auditService.js';
+import { mapToRequestDTO } from '../utils/requestDto.js';
 import {
   sendWelcomeEmail,
   sendCertificateApprovalEmail,
@@ -18,47 +19,6 @@ import {
 } from '../services/emailService.js';
 
 const router = express.Router();
-
-// DTO mapper helper for admin request listings
-const mapToAdminRequestDTO = async (reqDoc) => {
-  const user = reqDoc.user;
-  let fullName = user?.username || 'N/A';
-  let enrollmentNo = 'N/A';
-  let department = user?.department || 'Engineering';
-  let yearOfStudy = 'N/A';
-  let academicYear = '2025-2026';
-
-  if (user) {
-    const profile = await StudentProfile.findOne({ user: user._id || user });
-    if (profile) {
-      fullName = profile.fullName;
-      enrollmentNo = profile.enrollmentNo;
-      department = profile.department;
-      yearOfStudy = profile.yearOfStudy;
-      academicYear = profile.academicYear || '2025-2026';
-    }
-  }
-
-  const issuedCert = await IssuedCertificate.findOne({ request: reqDoc._id });
-
-  return {
-    requestId: reqDoc._id,
-    userId: user?._id || user,
-    username: user?.username || 'N/A',
-    fullName,
-    enrollmentNo,
-    department,
-    yearOfStudy,
-    academicYear,
-    purpose: reqDoc.purpose,
-    status: reqDoc.status,
-    appliedDate: reqDoc.appliedDate,
-    approvedDate: reqDoc.approvedDate,
-    remarks: reqDoc.remarks,
-    certificateNumber: issuedCert?.certificateNumber || null,
-    verificationToken: issuedCert?.verificationToken || null
-  };
-};
 
 // @route   GET /api/v1/admin/students
 // @desc    Get all registered student profiles
@@ -259,7 +219,7 @@ router.get('/requests', protect, isAdminOrHod, async (req, res, next) => {
         .populate('user');
     }
 
-    const dtos = await Promise.all(requests.map(r => mapToAdminRequestDTO(r)));
+    const dtos = await Promise.all(requests.map(r => mapToRequestDTO(r)));
     return res.json(dtos);
   } catch (err) {
     next(err);
@@ -345,7 +305,7 @@ const handleApproveRequest = async (req, res, next) => {
       req
     });
 
-    const dto = await mapToAdminRequestDTO(request);
+    const dto = await mapToRequestDTO(request);
     return res.json(dto);
   } catch (err) {
     next(err);
@@ -404,7 +364,7 @@ router.put('/requests/:requestId/reject', protect, isAdminOrHod, async (req, res
       req
     });
 
-    const dto = await mapToAdminRequestDTO(request);
+    const dto = await mapToRequestDTO(request);
     return res.json(dto);
   } catch (err) {
     next(err);
