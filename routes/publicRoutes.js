@@ -4,11 +4,29 @@ import StudentProfile from '../models/StudentProfile.js';
 
 const router = express.Router();
 
-// Public verification by token or cert number in URL
+const buildVerificationResponse = async (cert) => {
+  const certRequest = cert.request;
+  const user = certRequest?.user;
+  const profile = user ? await StudentProfile.findOne({ user: user._id }) : null;
+
+  return {
+    valid: true,
+    message: 'Authentic Bonafide Certificate Verified!',
+    certificateNumber: cert.certificateNumber,
+    verificationToken: cert.verificationToken,
+    fullName: profile ? profile.fullName : (user ? user.username : 'N/A'),
+    enrollmentNo: profile ? profile.enrollmentNo : 'N/A',
+    department: profile ? profile.department : (user ? user.department : 'Engineering'),
+    yearOfStudy: profile ? profile.yearOfStudy : 'Diploma Study',
+    academicYear: profile ? profile.academicYear : '2025-2026',
+    purpose: certRequest ? certRequest.purpose : 'Official',
+    issueDate: cert.issueDate
+  };
+};
+
 router.get('/verify/:token', async (req, res, next) => {
   try {
     const { token } = req.params;
-
     const cert = await IssuedCertificate.findOne({
       $or: [{ verificationToken: token }, { certificateNumber: token }]
     }).populate({
@@ -17,74 +35,35 @@ router.get('/verify/:token', async (req, res, next) => {
     });
 
     if (!cert || !cert.isValid) {
-      return res.json({
-        valid: false,
-        message: 'Document Tampered or Invalid Certificate Token.'
-      });
+      return res.json({ valid: false, message: 'Document Tampered or Invalid Certificate Token.' });
     }
 
-    const certRequest = cert.request;
-    const user = certRequest?.user;
-    const profile = user ? await StudentProfile.findOne({ user: user._id }) : null;
-
-    return res.json({
-      valid: true,
-      message: 'Authentic Bonafide Certificate Verified!',
-      certificateNumber: cert.certificateNumber,
-      verificationToken: cert.verificationToken,
-      fullName: profile ? profile.fullName : (user ? user.username : 'N/A'),
-      enrollmentNo: profile ? profile.enrollmentNo : 'N/A',
-      department: profile ? profile.department : (user ? user.department : 'Engineering'),
-      yearOfStudy: profile ? profile.yearOfStudy : 'Diploma Study',
-      academicYear: profile ? profile.academicYear : '2025-2026',
-      purpose: certRequest ? certRequest.purpose : 'Official',
-      issueDate: cert.issueDate
-    });
+    const data = await buildVerificationResponse(cert);
+    return res.json(data);
   } catch (err) {
     next(err);
   }
 });
 
-// Public verification by certificate number
 router.get('/verify-cert/:certNumber', async (req, res, next) => {
   try {
     const { certNumber } = req.params;
-
     const cert = await IssuedCertificate.findOne({ certificateNumber: certNumber }).populate({
       path: 'request',
       populate: { path: 'user' }
     });
 
     if (!cert || !cert.isValid) {
-      return res.json({
-        valid: false,
-        message: 'No active certificate found matching this Certificate ID.'
-      });
+      return res.json({ valid: false, message: 'No active certificate found matching this Certificate ID.' });
     }
 
-    const certRequest = cert.request;
-    const user = certRequest?.user;
-    const profile = user ? await StudentProfile.findOne({ user: user._id }) : null;
-
-    return res.json({
-      valid: true,
-      message: 'Authentic Bonafide Certificate Verified!',
-      certificateNumber: cert.certificateNumber,
-      verificationToken: cert.verificationToken,
-      fullName: profile ? profile.fullName : (user ? user.username : 'N/A'),
-      enrollmentNo: profile ? profile.enrollmentNo : 'N/A',
-      department: profile ? profile.department : (user ? user.department : 'Engineering'),
-      yearOfStudy: profile ? profile.yearOfStudy : 'Diploma Study',
-      academicYear: profile ? profile.academicYear : '2025-2026',
-      purpose: certRequest ? certRequest.purpose : 'Official',
-      issueDate: cert.issueDate
-    });
+    const data = await buildVerificationResponse(cert);
+    return res.json(data);
   } catch (err) {
     next(err);
   }
 });
 
-// Dedicated verify-document endpoint for POST lookup by cert number or scanned QR
 router.post('/verify-document', async (req, res, next) => {
   try {
     let { certNumber, query } = req.body;
@@ -112,23 +91,8 @@ router.post('/verify-document', async (req, res, next) => {
       });
     }
 
-    const certRequest = cert.request;
-    const user = certRequest?.user;
-    const profile = user ? await StudentProfile.findOne({ user: user._id }) : null;
-
-    return res.json({
-      valid: true,
-      message: 'Authentic Bonafide Certificate Verified!',
-      certificateNumber: cert.certificateNumber,
-      verificationToken: cert.verificationToken,
-      fullName: profile ? profile.fullName : (user ? user.username : 'N/A'),
-      enrollmentNo: profile ? profile.enrollmentNo : 'N/A',
-      department: profile ? profile.department : (user ? user.department : 'Engineering'),
-      yearOfStudy: profile ? profile.yearOfStudy : 'Diploma Study',
-      academicYear: profile ? profile.academicYear : '2025-2026',
-      purpose: certRequest ? certRequest.purpose : 'Official',
-      issueDate: cert.issueDate
-    });
+    const data = await buildVerificationResponse(cert);
+    return res.json(data);
   } catch (err) {
     next(err);
   }
