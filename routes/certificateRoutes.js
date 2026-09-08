@@ -3,16 +3,25 @@ import CertificateRequest from '../models/CertificateRequest.js';
 import IssuedCertificate from '../models/IssuedCertificate.js';
 import StudentProfile from '../models/StudentProfile.js';
 import { generateCertificatePdf } from '../services/pdfService.js';
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 // @route   GET /api/v1/certificates/download/:requestId
-// @desc    Download certificate PDF
-router.get('/download/:requestId', async (req, res, next) => {
+// @desc    Download certificate PDF (Protected with ownership check)
+router.get('/download/:requestId', protect, async (req, res, next) => {
   try {
     const certRequest = await CertificateRequest.findById(req.params.requestId).populate('user');
     if (!certRequest) {
       return res.status(404).json({ message: 'Certificate request not found', success: false });
+    }
+
+    // Ownership & Permission check: Student must own request unless user is Admin or HOD
+    const isOwner = req.user && req.user._id.toString() === certRequest.user._id.toString();
+    const isStaff = req.user && (req.user.role === 'ROLE_ADMIN' || req.user.role === 'ROLE_HOD');
+
+    if (!isOwner && !isStaff) {
+      return res.status(403).json({ message: 'Access denied: You are not authorized to download this certificate.', success: false });
     }
 
     if (certRequest.status !== 'APPROVED') {

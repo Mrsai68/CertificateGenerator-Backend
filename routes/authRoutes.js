@@ -142,7 +142,7 @@ router.post('/login', async (req, res, next) => {
 
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Incorrect password. Please try again.', success: false });
+      return res.status(401).json({ message: 'Incorrect password. Please try again', success: false });
     }
 
     const token = generateToken(user._id);

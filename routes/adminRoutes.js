@@ -6,6 +6,8 @@ import CertificateRequest from '../models/CertificateRequest.js';
 import IssuedCertificate from '../models/IssuedCertificate.js';
 import { protect, isAdminOrHod } from '../middleware/authMiddleware.js';
 import { generateCertificatePdf } from '../services/pdfService.js';
+import { createNotification } from '../services/notificationService.js';
+import { logAuditEvent } from '../services/auditService.js';
 import {
   sendWelcomeEmail,
   sendCertificateApprovalEmail,
@@ -147,6 +149,15 @@ router.post('/users', protect, isAdminOrHod, async (req, res, next) => {
       console.error('Welcome email dispatch warning:', emailErr.message);
     }
 
+    await logAuditEvent({
+      user: req.user,
+      action: 'USER_CREATED',
+      entityType: 'User',
+      entityId: savedUser._id.toString(),
+      metadata: { targetUsername: username, role, department },
+      req
+    });
+
     return res.json({ message: 'User created successfully', success: true });
   } catch (err) {
     next(err);
@@ -173,6 +184,15 @@ router.put('/users/:userId/toggle-status', protect, isAdminOrHod, async (req, re
       sendAccountReactivatedEmail(user.email, user.username);
     }
 
+    await logAuditEvent({
+      user: req.user,
+      action: user.isActive ? 'USER_ACTIVATED' : 'USER_DEACTIVATED',
+      entityType: 'User',
+      entityId: user._id.toString(),
+      metadata: { targetUsername: user.username, reason },
+      req
+    });
+
     return res.json({
       message: `User status toggled to ${user.isActive ? 'Active' : 'Inactive'}. Notification email sent.`,
       success: true
@@ -195,7 +215,6 @@ router.delete('/users/:userId', protect, isAdminOrHod, async (req, res, next) =>
     const studentName = profile?.fullName || user.username;
     const targetEmail = user.email;
 
-    // Send Account Deleted Notification Email (await for Vercel serverless execution)
     if (targetEmail) {
       try {
         await sendAccountDeletedEmail(targetEmail, studentName);
@@ -206,6 +225,15 @@ router.delete('/users/:userId', protect, isAdminOrHod, async (req, res, next) =>
 
     await StudentProfile.deleteOne({ user: user._id });
     await User.deleteOne({ _id: user._id });
+
+    await logAuditEvent({
+      user: req.user,
+      action: 'USER_DELETED',
+      entityType: 'User',
+      entityId: user._id.toString(),
+      metadata: { deletedUsername: user.username },
+      req
+    });
 
     return res.json({ message: 'User deleted successfully and notification email sent.', success: true });
   } catch (err) {
@@ -245,6 +273,11 @@ const handleApproveRequest = async (req, res, next) => {
     const request = await CertificateRequest.findById(req.params.requestId).populate('user');
     if (!request) {
       return res.status(404).json({ message: 'Request not found', success: false });
+    }
+
+    // Department Isolation Check for HOD
+    if (req.user.role === 'ROLE_HOD' && req.user.department !== 'ALL' && request.user.department !== req.user.department) {
+      return res.status(403).json({ message: 'Access denied: You can only approve requests for your own department.', success: false });
     }
 
     if (request.status !== 'PENDING') {
@@ -294,6 +327,24 @@ const handleApproveRequest = async (req, res, next) => {
       console.error('PDF Generation / Email send error:', pdfErr);
     }
 
+    // Create In-App Notification for Student
+    await createNotification({
+      userId: request.user._id,
+      title: 'Certificate Approved & Issued! 🎉',
+      message: `Your Bonafide Certificate for ${request.purpose} has been approved. Ref: ${certNo}`,
+      type: 'SUCCESS'
+    });
+
+    // Create Audit Log
+    await logAuditEvent({
+      user: req.user,
+      action: 'REQUEST_APPROVED',
+      entityType: 'CertificateRequest',
+      entityId: request._id.toString(),
+      metadata: { certificateNumber: certNo, studentUsername: request.user.username },
+      req
+    });
+
     const dto = await mapToAdminRequestDTO(request);
     return res.json(dto);
   } catch (err) {
@@ -313,6 +364,11 @@ router.put('/requests/:requestId/reject', protect, isAdminOrHod, async (req, res
       return res.status(404).json({ message: 'Request not found', success: false });
     }
 
+    // Department Isolation Check for HOD
+    if (req.user.role === 'ROLE_HOD' && req.user.department !== 'ALL' && request.user.department !== req.user.department) {
+      return res.status(403).json({ message: 'Access denied: You can only reject requests for your own department.', success: false });
+    }
+
     if (request.status !== 'PENDING') {
       return res.status(400).json({ message: `Request has already been processed with status: ${request.status}`, success: false });
     }
@@ -329,6 +385,24 @@ router.put('/requests/:requestId/reject', protect, isAdminOrHod, async (req, res
     const studentName = profile ? profile.fullName : request.user.username;
 
     sendCertificateRejectionEmail(request.user.email, studentName, request.purpose, remarks);
+
+    // Create In-App Notification for Student
+    await createNotification({
+      userId: request.user._id,
+      title: 'Certificate Request Rejected',
+      message: `Your request for ${request.purpose} was rejected. Reason: ${remarks}`,
+      type: 'ERROR'
+    });
+
+    // Create Audit Log
+    await logAuditEvent({
+      user: req.user,
+      action: 'REQUEST_REJECTED',
+      entityType: 'CertificateRequest',
+      entityId: request._id.toString(),
+      metadata: { remarks, studentUsername: request.user.username },
+      req
+    });
 
     const dto = await mapToAdminRequestDTO(request);
     return res.json(dto);

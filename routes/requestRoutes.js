@@ -3,6 +3,8 @@ import CertificateRequest from '../models/CertificateRequest.js';
 import IssuedCertificate from '../models/IssuedCertificate.js';
 import StudentProfile from '../models/StudentProfile.js';
 import { protect, isStudent } from '../middleware/authMiddleware.js';
+import { createNotification } from '../services/notificationService.js';
+import { logAuditEvent } from '../services/auditService.js';
 
 const router = express.Router();
 
@@ -67,6 +69,23 @@ router.post('/apply', protect, isStudent, async (req, res, next) => {
     const savedReq = await certRequest.save();
     const populatedReq = await CertificateRequest.findById(savedReq._id).populate('user');
     const responseDto = await mapToDTO(populatedReq);
+
+    // Create Notification & Audit Log Entry
+    await createNotification({
+      userId: req.user._id,
+      title: 'Certificate Request Submitted',
+      message: `Your request for ${purpose} has been submitted and is under review.`,
+      type: 'INFO'
+    });
+
+    await logAuditEvent({
+      user: req.user,
+      action: 'REQUEST_SUBMITTED',
+      entityType: 'CertificateRequest',
+      entityId: savedReq._id.toString(),
+      metadata: { purpose },
+      req
+    });
 
     return res.json(responseDto);
   } catch (err) {

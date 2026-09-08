@@ -10,6 +10,8 @@ import adminRoutes from './routes/adminRoutes.js';
 import certificateRoutes from './routes/certificateRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
 import studentRoutes from './routes/studentRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import auditRoutes from './routes/auditRoutes.js';
 
 dotenv.config();
 
@@ -62,6 +64,8 @@ app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/certificates', certificateRoutes);
 app.use('/api/v1/public', publicRoutes);
 app.use('/api/v1/student', studentRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/v1/audit-logs', auditRoutes);
 
 app.use(errorHandler);
 
