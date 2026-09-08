@@ -28,6 +28,22 @@ router.get('/download/:requestId', protect, async (req, res, next) => {
       return res.status(400).json({ message: 'Certificate has not been approved yet.', success: false });
     }
 
+    // 5-Minute Digital Wallet Security Delay Enforcement for Students
+    const WALLET_DELAY_MS = 5 * 60 * 1000;
+    const isStudent = req.user && req.user.role === 'ROLE_STUDENT';
+    if (isStudent && certRequest.approvedDate) {
+      const elapsedMs = Date.now() - new Date(certRequest.approvedDate).getTime();
+      if (elapsedMs < WALLET_DELAY_MS) {
+        const remainingMs = WALLET_DELAY_MS - elapsedMs;
+        const mins = Math.floor(remainingMs / 60000);
+        const secs = Math.ceil((remainingMs % 60000) / 1000);
+        return res.status(403).json({
+          message: `Digital Wallet security sync active. Your approved certificate will be available for download in ${mins}m ${secs}s.`,
+          success: false
+        });
+      }
+    }
+
     const issuedCert = await IssuedCertificate.findOne({ request: certRequest._id });
     if (!issuedCert) {
       return res.status(404).json({ message: 'Issued certificate record not found', success: false });
