@@ -69,7 +69,7 @@ app.use('/api/v1/audit-logs', auditRoutes);
 
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8081;
 
 if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
   app.listen(PORT);

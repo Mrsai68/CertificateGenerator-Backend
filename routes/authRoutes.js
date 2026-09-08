@@ -4,6 +4,8 @@ import User from '../models/User.js';
 import StudentProfile from '../models/StudentProfile.js';
 import ResetOtpPassword from '../models/ResetOtpPassword.js';
 import { sendWelcomeEmail, sendPasswordResetOtpEmail } from '../services/emailService.js';
+import { createNotification } from '../services/notificationService.js';
+import { logAuditEvent } from '../services/auditService.js';
 
 const router = express.Router();
 
@@ -78,6 +80,23 @@ router.post('/register', async (req, res, next) => {
     });
     await profile.save();
 
+    // Create Welcome Notification & Audit Log
+    await createNotification({
+      userId: savedUser._id,
+      title: 'Welcome to CertiVerify Portal! 🎉',
+      message: `Welcome ${profile.fullName}! You can now submit Bonafide Certificate applications from your dashboard.`,
+      type: 'INFO'
+    });
+
+    await logAuditEvent({
+      user: savedUser,
+      action: 'USER_REGISTERED',
+      entityType: 'User',
+      entityId: savedUser._id.toString(),
+      metadata: { username: savedUser.username, email: savedUser.email, role: savedUser.role },
+      req
+    });
+
     // Send Welcome Email (await for Vercel Serverless function completion)
     try {
       await sendWelcomeEmail(savedUser.email, profile.fullName, savedUser.username);
@@ -114,7 +133,16 @@ router.post('/userreg', async (req, res, next) => {
       department: finalDept,
       isActive: true
     });
-    await user.save();
+    const savedUser = await user.save();
+
+    await logAuditEvent({
+      user: savedUser,
+      action: 'HOD_REGISTERED',
+      entityType: 'User',
+      entityId: savedUser._id.toString(),
+      metadata: { username: savedUser.username, department: finalDept },
+      req
+    });
 
     return res.json({
       message: 'HOD User created successfully!',
@@ -155,6 +183,16 @@ router.post('/login', async (req, res, next) => {
       fullName = profile.fullName;
       enrollment = profile.enrollmentNo;
     }
+
+    // Log Audit Event
+    await logAuditEvent({
+      user,
+      action: 'USER_LOGIN',
+      entityType: 'User',
+      entityId: user._id.toString(),
+      metadata: { username: user.username, role: user.role },
+      req
+    });
 
     return res.json({
       accessToken: token,
